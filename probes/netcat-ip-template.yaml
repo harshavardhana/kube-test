@@ -1,0 +1,72 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ip-records-cm
+  labels:
+    app: netcat-ipdirect
+data:
+  records.txt: |-
+    @@ip@@
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netcat-ipdirect
+spec:
+  selector:
+    matchLabels:
+      run: test
+      app: netcat-ipdirect
+  replicas: @@replicas@@
+  template:
+    metadata:
+      labels:
+        run: test
+        app: netcat-ipdirect
+    spec:
+      dnsPolicy: ClusterFirst
+      containers:
+        - name: netcat-ipdirect
+          image: pepitedata/tools:focal
+          imagePullPolicy: Always
+          command:
+          - /bin/bash
+          - -c
+          - |
+            echo "Start netcat loop myhttpserver ipdirect"; while true ; do for i in $(cat /opt/records.txt); do nc -w 1 $i 9000 || echo "ERROR netcat myhttpserver ipdirect $i $(date)" & done; sleep 1 ; done
+          volumeMounts:
+          - mountPath: /opt/
+            name: ip-records-vol
+            readOnly: true
+          resources:
+            requests: 
+              cpu: "250m"
+              memory: "200M"
+            limits: 
+              cpu: "250m"
+              memory: "200M"
+          startupProbe:
+            exec:
+              command:
+              - ls
+              - /etc/profile
+            initialDelaySeconds: 10
+            periodSeconds: 1
+            failureThreshold: 10
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: ip-records-cm
+        name: ip-records-vol
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - mytest
+              topologyKey: "kubernetes.io/hostname"

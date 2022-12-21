@@ -1,0 +1,86 @@
+---
+global:
+  writeToFile: true
+  metricsDirectory: collected-metrics
+  indexerConfig:
+    enabled: false
+    esServers: [http://elastic-elk.apps.rsevilla.kube-burner.com]
+    insecureSkipVerify: true
+    defaultIndex: kube-burner
+    type: elastic
+  measurements:
+    - name: podLatency
+      esIndex: kube-burner
+
+jobs:
+  - name: api-intensive
+    jobIterations: 40
+    qps: 50
+    burst: 50
+    namespacedIterations: true
+    namespace: api-intensive
+    podWait: false
+    cleanup: true
+    waitFor: []
+    waitWhenFinished: true
+    preLoadImages: false
+    preLoadPeriod: 1s
+    maxWaitTimeout: 10m
+    objects:
+      - objectTemplate: templates/deployment.yaml
+        replicas: 10
+      - objectTemplate: templates/configmap.yaml
+        replicas: 10
+      - objectTemplate: templates/secret.yaml
+        replicas: 10
+      - objectTemplate: templates/service.yaml
+        replicas: 10
+
+  - name: api-intensive-patch
+    jobType: patch
+    preLoadImages: false
+    preLoadPeriod: 1s
+    jobIterations: 20
+    qps: 50
+    burst: 50
+    objects:
+      - kind: Deployment
+        objectTemplate: templates/deployment_patch_add_pod_2.yaml
+        labelSelector: {kube-burner-job: api-intensive}
+        patchType: "application/apply-patch+yaml"
+        apiVersion: apps/v1
+      - kind: Deployment
+        objectTemplate: templates/deployment_patch_add_label.yaml
+        labelSelector: {kube-burner-job: api-intensive}
+        patchType: "application/strategic-merge-patch+json"
+        apiVersion: apps/v1
+
+  - name: api-intensive-remove
+    qps: 20
+    burst: 20
+    jobType: delete
+    waitForDeletion: true
+    objects:
+      - kind: Deployment
+        labelSelector: {kube-burner-job: api-intensive}
+        apiVersion: apps/v1
+
+  - name: remove-services
+    qps: 20
+    burst: 20
+    jobType: delete
+    waitForDeletion: true
+    objects:
+      - kind: Service
+        labelSelector: {kube-burner-job: api-intensive}
+
+  - name: remove-configmaps-secrets
+    qps: 20
+    burst: 20
+    jobType: delete
+    objects:
+      - kind: ConfigMap
+        labelSelector: {kube-burner-job: api-intensive}
+      - kind: Secret
+        labelSelector: {kube-burner-job: api-intensive}
+

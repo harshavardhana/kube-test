@@ -1,0 +1,93 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: myreadyserver
+  labels:
+    app: readyserver
+    app.kubernetes.io/name: readyserver
+    app.kubernetes.io/instance: myreadyserver
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myreadyserver
+  labels:
+    app: readyserver
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None  
+  ports:
+    - port: 9000
+      name: http1
+  selector:
+    app: readyserver
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: myreadyserver
+  namespace: "default"
+  labels:
+    app: readyserver
+spec:
+  serviceName: myreadyserver
+  replicas: @@replicas@@
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: readyserver
+  template:
+    metadata:
+      name: readyserver
+      labels:
+        app: readyserver
+    spec:
+      serviceAccountName: myreadyserver
+      securityContext:
+        {}
+      containers:
+        - name: readyserver
+          securityContext:
+            {}
+          image: pepitedata/tools:focal
+          imagePullPolicy: Always
+          command:
+          - /bin/bash
+          - -c
+          - |
+            echo "Start ready server on port 9000"; python3 -m http.server 9000
+          resources:
+            requests: 
+              cpu: "250m"
+              memory: "200M"
+            limits: 
+              cpu: "250m"
+              memory: "200M"
+          ports:
+            - name: http1
+              containerPort: 9000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9000
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 1
+          startupProbe:
+            httpGet:
+              path: /
+              port: 9000
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 10
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - readyserver
+              topologyKey: "kubernetes.io/hostname"

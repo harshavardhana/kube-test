@@ -1,0 +1,84 @@
+# Default values for warp.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Number of warp client instances
+replicaCount: 6
+
+image:
+  repository: minio/warp:latest 
+  pullPolicy: Always
+
+nameOverride: ""
+fullnameOverride: ""
+
+warpConfiguration:
+  # Operation to be benchmarked (get / put / delete / list / stat / mixed)
+  operationToBenchmark: put
+  # Whether TLS enabled or not for above URL
+  s3ServerTLSEnabled: true
+  # Region for S3 Server
+  s3ServerRegion: ""
+  # MinIO or other S3 Compatible server URL
+  s3ServerURL: minio.min.svc.cluster.local
+  s3AccessKey: "G9xxx"
+  s3SecretKey: "Eixxx"
+
+warpJobArgs:
+  # Full args can be found: https://github.com/minio/warp#usage
+  #
+  # Number of objects to be used
+  #objects: 10000
+  #
+  # Object size to be used for benchmarks
+  obj.size: 50MiB
+  #
+  # Duration for which the benchmark will run
+  duration: 10m0s
+  #
+  # Number of parallel operations to run during benchmark
+  concurrent: 10
+  #
+  # By default operations are performed on a bucket called warp-benchmark-bucket.
+  # This can be changed using the --bucket parameter. Do however note that the bucket
+  # will be completely cleaned before and after each run, so it should not contain any data.
+  # bucket: "warp-benchmark-bucket"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  port: 7761
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

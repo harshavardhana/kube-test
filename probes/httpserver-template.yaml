@@ -1,0 +1,91 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: myhttpserver
+  labels:
+    app.kubernetes.io/name: httpserver
+    app.kubernetes.io/instance: myhttpserver
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myhttpserver
+  labels:
+    app: httpserver
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None  
+  ports:
+    - port: 9000
+      name: http1
+  selector:
+    app: httpserver
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: myhttpserver
+  namespace: "default"
+  labels:
+    app: httpserver
+spec:
+  serviceName: myhttpserver
+  replicas: @@replicas@@
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: httpserver
+  template:
+    metadata:
+      name: httpserver
+      labels:
+        app: httpserver
+    spec:
+      serviceAccountName: myhttpserver
+      securityContext:
+        {}
+      containers:
+        - name: httpserver
+          securityContext:
+            {}
+          image: pepitedata/tools:focal
+          imagePullPolicy: Always
+          command:
+          - /bin/bash
+          - -c
+          - |
+            echo "Start http server on port 9000"; python3 -m http.server 9000
+          resources:
+            requests: 
+              cpu: "250m"
+              memory: "200M"
+            limits: 
+              cpu: "250m"
+              memory: "200M"
+          ports:
+            - name: http1
+              containerPort: 9000
+          startupProbe:
+            httpGet:
+              path: /
+              port: 9000
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 9000
+            periodSeconds: 1
+            failureThreshold: 1
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - httpserver
+              topologyKey: "kubernetes.io/hostname"

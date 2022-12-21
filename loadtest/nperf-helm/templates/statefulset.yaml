@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ template "nperf.fullname" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app: nperf
+spec:
+  serviceName: {{ template "nperf.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: nperf
+  template:
+    metadata:
+      name: nperf
+      labels:
+        app: nperf
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "nperf.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: nperf
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- range $i := until ($.Values.replicaCount | int)}}
+            - {{ template "nperf.fullname" $ }}-{{ $i }}.{{ template "nperf.fullname" $ }}.{{ $.Release.Namespace }}.svc.{{ $.Values.clusterDomain }}
+            {{ end }}
+          ports:
+            - name: http1
+              containerPort: 9999
+            - name: http2
+              containerPort: 10000
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - nperf
+              topologyKey: "kubernetes.io/hostname"
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

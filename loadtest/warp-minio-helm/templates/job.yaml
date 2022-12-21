@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "warp.fullname" . }}
+  labels:
+    {{- include "warp.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: {{ include "warp.fullname" . }}
+        image: "{{ .Values.image.repository }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+          - "{{ .Values.warpConfiguration.operationToBenchmark }}"
+          - "--warp-client={{ .Release.Name }}-{0...{{ sub .Values.replicaCount 1 }}}.{{ .Release.Name }}.{{ .Release.Namespace }}"
+        {{- range $k, $v := .Values.warpJobArgs }}
+          - --{{ $k }}={{ $v }}
+        {{- end }}
+        env:
+          - name: WARP_HOST
+            value: {{ .Values.warpConfiguration.s3ServerURL | quote }}
+        {{- if .Values.warpConfiguration.s3ServerTLSEnabled }}
+          - name: WARP_TLS
+            value: "true"
+        {{- end }}
+          - name: WARP_REGION
+            value: {{ .Values.warpConfiguration.s3ServerRegion | quote }}
+          - name: WARP_ACCESS_KEY
+            value: {{ .Values.warpConfiguration.s3AccessKey | quote }}
+          - name: WARP_SECRET_KEY
+            value: {{ .Values.warpConfiguration.s3SecretKey | quote }}
+    {{- if .Values.nodeSelector }}
+      nodeSelector: {{- .Values.nodeSelector | toYaml | nindent 8 }}
+    {{- end }}
+  backoffLimit: 4

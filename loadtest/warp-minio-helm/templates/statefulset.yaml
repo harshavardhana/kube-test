@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "warp.fullname" . }}
+  labels:
+    {{- include "warp.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "warp.fullname" . }}
+  podManagementPolicy: Parallel
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "warp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      name: {{ template "warp.fullname" . }}
+      labels:
+        {{- include "warp.selectorLabels" . | nindent 8 }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: "app.kubernetes.io/instance"
+                  operator: In
+                  values:
+                  - warp
+            topologyKey: "kubernetes.io/hostname"
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: "min/node-pool"
+                  operator: DoesNotExist
+                - key: "min.io/node-pool"
+                  operator: DoesNotExist
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - client	  
+          ports:
+            - name: http
+              containerPort: 7761
+    {{- if .Values.affinity }}
+      affinity: {{- .Values.affinity | toYaml | nindent 8 }}
+    {{- end }}
+    {{- if .Values.nodeSelector }}
+      nodeSelector: {{- .Values.nodeSelector | toYaml | nindent 8 }}
+    {{- end }}
