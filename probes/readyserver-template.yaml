@@ -59,11 +59,11 @@ spec:
             echo "Start ready server on port 9000"; python3 -m http.server 9000
           resources:
             requests: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "60M"
             limits: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "60M"
           ports:
             - name: http1
               containerPort: 9000
@@ -72,6 +72,7 @@ spec:
               path: /
               port: 9000
             initialDelaySeconds: 1
+            timeoutSeconds: @@timeout_sec@@
             periodSeconds: 1
             failureThreshold: 1
           startupProbe:
@@ -79,6 +80,7 @@ spec:
               path: /
               port: 9000
             initialDelaySeconds: 1
+            timeoutSeconds: 1
             periodSeconds: 1
             failureThreshold: 10
       affinity:

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+timeout_sec=5
 list="netcat-ip-template.yaml netcat-lookup-template.yaml readyserver-template.yaml"
 ns_kube=default
 mode=install
@@ -32,6 +33,7 @@ elif [[ "$mode" = "install" ]]; then
     for tpl in httpserver-template.yaml ${list}; do
         dep=${tpl%%-template.yaml}-${cluster}.yaml
         sed "s/@@replicas@@/${replicas}/g" ${tpl} > ${dep}
+        sed -i "s/@@timeout_sec@@/${timeout_sec}/g" ${dep}
     done
 
     # be aware httpserver-template.yaml should be first !!!
@@ -52,8 +54,7 @@ elif [[ "$mode" = "install" ]]; then
 
     echo ""
     echo "Commands to inspect logs : "
-    echo "kubectl logs -n ${ns_kube} -l app=netcat-ipdirect"
-    echo "kubectl logs -n ${ns_kube} -l app=netcat-lookup"
+    echo "kubectl logs -n ${ns_kube} -l app=netcat-ipdirect ; kubectl logs -n ${ns_kube} -l app=netcat-lookup"
 
 else
     echo "ERROR ! incorrect value for mode : $mode ; should be in [install,clean]"

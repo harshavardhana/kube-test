@@ -56,8 +56,8 @@ jobs:
         apiVersion: apps/v1
 
   - name: api-intensive-remove
-    qps: 20
-    burst: 20
+    qps: 50
+    burst: 50
     jobType: delete
     waitForDeletion: true
     objects:
@@ -66,8 +66,8 @@ jobs:
         apiVersion: apps/v1
 
   - name: remove-services
-    qps: 20
-    burst: 20
+    qps: 50
+    burst: 50
     jobType: delete
     waitForDeletion: true
     objects:
@@ -75,8 +75,8 @@ jobs:
         labelSelector: {kube-burner-job: api-intensive}
 
   - name: remove-configmaps-secrets
-    qps: 20
-    burst: 20
+    qps: 50
+    burst: 50
     jobType: delete
     objects:
       - kind: ConfigMap

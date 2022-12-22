@@ -58,11 +58,11 @@ spec:
             echo "Start http server on port 9000"; python3 -m http.server 9000
           resources:
             requests: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "60M"
             limits: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "60M"
           ports:
             - name: http1
               containerPort: 9000
@@ -72,13 +72,15 @@ spec:
               port: 9000
             initialDelaySeconds: 1
             periodSeconds: 1
+            timeoutSeconds: 1
             failureThreshold: 10
           livenessProbe:
             httpGet:
               path: /
               port: 9000
-            periodSeconds: 1
-            failureThreshold: 1
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

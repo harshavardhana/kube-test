@@ -35,26 +35,27 @@ spec:
           - /bin/bash
           - -c
           - |
-            echo "Start netcat loop myhttpserver ipdirect"; while true ; do for i in $(cat /opt/records.txt); do nc -w 1 $i 9000 || echo "ERROR netcat myhttpserver ipdirect $i $(date)" & done; sleep 1 ; done
+            echo "Start netcat loop myhttpserver ipdirect"; while true ; do for i in $(cat /opt/records.txt); do nc -w @@timeout_sec@@ $i 9000 || echo "ERROR netcat ipdirect $i $(date)" & done; sleep @@timeout_sec@@ ; done
           volumeMounts:
           - mountPath: /opt/
             name: ip-records-vol
             readOnly: true
           resources:
             requests: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "40M"
             limits: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "40M"
           startupProbe:
             exec:
               command:
               - ls
               - /etc/profile
             initialDelaySeconds: 10
-            periodSeconds: 1
-            failureThreshold: 10
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
       volumes:
       - configMap:
           defaultMode: 420

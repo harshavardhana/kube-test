@@ -23,22 +23,23 @@ spec:
           - /bin/bash
           - -c
           - |
-            echo "Start netcat loop myhttpserver lookup"; while true ; do for j in {1..@@replicas@@}; do i=$(($j-1)); nc -w 1 myhttpserver-$i.myhttpserver.default.svc.cluster.local 9000 || echo "ERROR netcat myhttpserver-$i $(date)" & done; sleep 1 ; done
+            echo "Start netcat loop myhttpserver lookup"; while true ; do for j in {1..@@replicas@@}; do i=myhttpserver-$(($j-1)).myhttpserver.default.svc.cluster.local; nc -w @@timeout_sec@@ $i 9000|| echo "ERROR netcat lookup $i $(date)" & done; sleep @@timeout_sec@@ ; done
           resources:
             requests: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "40M"
             limits: 
-              cpu: "250m"
-              memory: "200M"
+              cpu: "20m"
+              memory: "40M"
           startupProbe:
             exec:
               command:
               - ls
               - /etc/profile
             initialDelaySeconds: 10
-            periodSeconds: 1
-            failureThreshold: 10
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
